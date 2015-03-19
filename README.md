@@ -18,4 +18,4 @@ Creating something like a photobox for the wedding of my brother, took me to the
 My starting point how the card works:
   https://code.google.com/p/sceye-fi/wiki/UploadProtocol
 
-The work of Maximilian Golla can be seen in the repository
+The work of Maximilian Golla can be seen in the [repository](https://github.com/michaelbrandt/node-eyefimobiserver/blob/master/related_work/eyefi-mobi.py "Maximilian Golla - eyefi-moby.py")
