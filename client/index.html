@@ -1,0 +1,92 @@
+<html>
+    <head>
+	   <script src="/js/jquery-1.11.2.min.js"></script>
+	   <script src="/socket.io/socket.io.js"></script>
+	   <script src="/js/jquery.photoset-grid.min.js"></script>
+	
+	   <script>
+            // http://stackoverflow.com/questions/1527803/generating-random-numbers-in-javascript-in-a-specific-range
+		    function getRandomArbitrary(min, max) {
+    		    return Math.floor(Math.random() * (max - min) + min);
+		    }
+
+		    var photos = new Array("pre1.jpg", "pre2.jpg", "pre3.jpg", "pre4.jpg", "pre5.jpg");
+		    var interval = ""; 
+
+		    $(document).ready(function() {
+    		  var socket = io.connect();
+
+    		  socket.on('update', function(data){
+    		    photos[photos.length] = data.path;
+    			clearInterval(interval);
+
+    			$('#img_one').fadeOut(500, function() {
+        			$('#img_one').attr("src","/img/" + data.path);
+        			$('#img_one').fadeIn(500);
+    			});
+
+    			interval = window.setInterval(function(){
+    				var random_images = new Array();
+
+    				while(random_images.length < 4){
+    					var img = getRandomArbitrary(0, photos.length);
+    					var duplicate = false;
+
+    					for(var i=0; i<random_images.length;i++){
+    						if(random_images[i] == img){
+    							duplicate = true;
+    						}
+    					}
+
+    					if(duplicate == false){
+    						random_images[random_images.length] = img;
+    					}
+    				}
+
+    				$('#img_two').fadeOut(500, function() {
+        				$('#img_two').attr("src","/img/" + photos[random_images[0]])
+        				$('#img_two').fadeIn(500);
+    				});
+
+    					$('#img_three').fadeOut(500, function() {
+        					$('#img_three').attr("src","/img/" + photos[random_images[1]]);
+        					$('#img_three').fadeIn(500);
+    				});
+
+    					$('#img_four').fadeOut(500, function() {
+        					$('#img_four').attr("src","/img/" + photos[random_images[2]]);
+        					$('#img_four').fadeIn(500);
+    				});
+
+    					$('#img_five').fadeOut(500, function() {
+        					$('#img_five').attr("src","/img/" + photos[random_images[3]]);
+        					$('#img_five').fadeIn(500);
+    				});
+				}, 7000);
+    		});   		
+
+    		//Grid
+    		$('.photoset-grid-basic').photosetGrid({gutter: '5px', width: "75%"});
+
+    		$('#grid').css("margin-left","auto");
+    		$('#grid').css("margin-right","auto");
+    		$("body").css("background-image","url(\"/img/bg_h.jpg\")");
+    		$("body").css("background-repeat", "no-repeat");
+
+        });
+
+	   </script>
+
+    </head>
+    <body>
+        <div>
+	        <div id="grid" class="photoset-grid-basic" data-layout="14">
+  		        <img id="img_one" src="/img/pre1.jpg">
+  		        <img id="img_two" src="/img/pre2.jpg">
+  		        <img id="img_three" src="/img/pre3.jpg">
+  		        <img id="img_four" src="/img/pre4.jpg">
+  		        <img id="img_five" src="/img/pre5.jpg">
+	        </div>
+        </div>
+    </body>
+</html>
