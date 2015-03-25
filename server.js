@@ -4,14 +4,30 @@ var fs 				= require("fs");
 var parseString 	= require('xml2js').parseString;
 var bodyParser 		= require('body-parser');
 var multer 			= require('multer'); 
-var PythonShell 	= require('python-shell');
 var serveStatic 	= require('serve-static');
 var http 			= require('http').Server(eyefi_server);
 var io 				= require('socket.io')(http);
-var snonce 			= '30c1ac2479d4ae4b52c80ea9809a6fcc';// has to be changed to random string
+var iconv 			= require('iconv-lite');
+var md5 			= require('MD5');
+var Buffer          = require('buffer').Buffer;
 var verbose 		= true;
+var key 			= "00000000000000000000000000000000" // Key is always 00..0
+var snonce 			= "30c1ac2479d4ae4b52c80ea9809a6fcc" // Number Used Once (NONCE), different for every datatransfer
+
 
 function msg(debugMsg){if(verbose){console.log(debugMsg);}}
+
+function get_credential(string) {
+    var beforeMD5 = new Buffer("");
+    for (var i = 0; i < string.length; i+=2) {
+        var chunk = string[i] + string[i+1];
+        var hexval = "0x" + chunk;
+        var dec = parseInt(hexval, 16);
+        var myByte = iconv.encode(String.fromCharCode(dec), "latin1");
+        beforeMD5 = Buffer.concat([beforeMD5, myByte]);
+    }
+    return md5(beforeMD5)
+};
 
 eyefi_server.use(bodyParser.urlencoded({extended: true}));
 eyefi_server.use(bodyParser.json());
@@ -66,13 +82,7 @@ eyefi_server.post('/api/soap/eyefilm/v1', function (req, res) {
     			transfermodetimestamp 	= extract['transfermodetimestamp'][0];
 		});
 
-		var pyshell = new PythonShell('credential_one.py');
-			pyshell.on('message', function (message) {
- 					credential_one = message;
-					res.send('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><ns1:StartSessionResponse xmlns:ns1="http://localhost/api/soap/eyefilm"><credential>' + credential_one + '</credential><snonce>' + snonce + '</snonce><transfermode>' + transfermode + '</transfermode><transfermodetimestamp>' + transfermodetimestamp + '</transfermodetimestamp><upsyncallowed>false</upsyncallowed></ns1:StartSessionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>');
-			});
-			pyshell.send(cnonce);
-			pyshell.send(mac);
+		res.send('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><ns1:StartSessionResponse xmlns:ns1="http://localhost/api/soap/eyefilm"><credential>' + get_credential(mac + cnonce + key) + '</credential><snonce>' + snonce + '</snonce><transfermode>' + transfermode + '</transfermode><transfermodetimestamp>' + transfermodetimestamp + '</transfermodetimestamp><upsyncallowed>false</upsyncallowed></ns1:StartSessionResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>');
 		
 	}
 	else if(headerValue == "\"urn:GetPhotoStatus\""){
@@ -93,21 +103,16 @@ eyefi_server.post('/api/soap/eyefilm/v1', function (req, res) {
       			flags 						= extract['flags'][0];
 		});
 
-		var pyshell = new PythonShell('credential_two.py');
-			pyshell.on('message', function (credential_expected) {
- 					if(credential_expected == credential_client_to_server){
-						res.send('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><ns1:GetPhotoStatusResponse xmlns:ns1="http://localhost/api/soap/eyefilm"><fileid>' + 1 + '</fileid><offset>0</offset></ns1:GetPhotoStatusResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>');
- 					}
- 					else{
- 						//this could mean someone tries to attack the server
- 						msg("Eye-Fi SD card failed to authenticate. File " +  filename + " not received. ");
- 						res.send('Nice try!');
- 					}
-			});
-			pyshell.send(snonce);
-			pyshell.send(mac);
-		}
-	else{
+ 		if(get_credential(mac + key + snonce) == credential_client_to_server){
+			res.send('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body><ns1:GetPhotoStatusResponse xmlns:ns1="http://localhost/api/soap/eyefilm"><fileid>' + 1 + '</fileid><offset>0</offset></ns1:GetPhotoStatusResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>');
+ 		}
+ 		else{
+ 			//this could mean someone tries to attack the server
+ 			msg("Eye-Fi SD card failed to authenticate. File " +  filename + " not received. ");
+			res.send('Nice try!');
+ 		}
+ 	}
+ 	else{
 		res.send('Unknown Request');
 	}
 });
