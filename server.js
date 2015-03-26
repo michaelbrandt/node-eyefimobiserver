@@ -1,20 +1,20 @@
 var eyefi_server 	= require('express')();
-var tar 			= require("tar");
-var fs 				= require("fs");
+var tar 		= require("tar");
+var fs 			= require("fs");
 var parseString 	= require('xml2js').parseString;
 var bodyParser 		= require('body-parser');
-var multer 			= require('multer'); 
+var multer 		= require('multer'); 
 var serveStatic 	= require('serve-static');
-var http 			= require('http').Server(eyefi_server);
-var io 				= require('socket.io')(http);
-var iconv 			= require('iconv-lite');
-var md5 			= require('MD5');
-var Buffer          = require('buffer').Buffer;
-var randomstring = require("randomstring");
+var http 		= require('http').Server(eyefi_server);
+var io 			= require('socket.io')(http);
+var iconv 		= require('iconv-lite');
+var md5 		= require('MD5');
+var Buffer          	= require('buffer').Buffer;
+var randomstring 	= require("randomstring");
 var verbose 		= true;
-var snonceStorage = "";
-var snonceStorageLock = false;
-var key 			= "00000000000000000000000000000000" // Key is always 00..0
+var snonceStorage 	= "";
+var snonceStorageLock 	= false;
+var key 		= "00000000000000000000000000000000" // Key is always 00..0
 
 // creates a new random generated Server Number Used Once (SNONCE), different for every datatransfer
 function getNewSnonce(){return md5(randomstring.generate(40));}
@@ -92,17 +92,17 @@ eyefi_server.post('/api/soap/eyefilm/v1', function (req, res) {
 
 	if(headerValue == "\"urn:StartSession\""){
 		msg("Got StartSession request");
-		var mac 						= '';
-		var cnonce 						= '';
-		var transfermode 				= '';
-		var transfermodetimestamp 		= '';
+		var mac 			= '';
+		var cnonce 			= '';
+		var transfermode 		= '';
+		var transfermodetimestamp 	= '';
 		var credential_server_to_client = '';	
 		
 		parseString(req.rawBody, function (err, result) {
-			var	extract 				= result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['ns1:StartSession'][0];
-    			mac 					= extract['macaddress'][0];
-    			cnonce 					= extract['cnonce'][0];
-    			transfermode 			= extract['transfermode'][0];
+		var 	extract 		= result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['ns1:StartSession'][0];
+    			mac 			= extract['macaddress'][0];
+    			cnonce 			= extract['cnonce'][0];
+    			transfermode 		= extract['transfermode'][0];
     			transfermodetimestamp 	= extract['transfermodetimestamp'][0];
 		});
 
@@ -113,20 +113,20 @@ eyefi_server.post('/api/soap/eyefilm/v1', function (req, res) {
 	}
 	else if(headerValue == "\"urn:GetPhotoStatus\""){
 		msg("Got GetPhotoStatus request");
-      	var mac = '';
-      	var filename = '';
-      	var filesize = '';
-      	var filesignature = '';
-      	var flags = '';
+      	var mac 		= '';
+      	var filename 		= '';
+      	var filesize 		= '';
+      	var filesignature 	= '';
+      	var flags 		= '';
 
 		parseString(req.rawBody, function (err, result) {
-			var extract 					= result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['ns1:GetPhotoStatus'][0];
-    			credential_client_to_server = extract['credential'][0];
-      			mac 						= extract['macaddress'][0];
-      			filename 					= extract['filename'][0];
-      			filesize 					= extract['filesize'][0];
-      			filesignature				= extract['filesignature'][0];
-      			flags 						= extract['flags'][0];
+		var 	extract 			= result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['ns1:GetPhotoStatus'][0];
+    			credential_client_to_server 	= extract['credential'][0];
+      			mac 				= extract['macaddress'][0];
+      			filename 			= extract['filename'][0];
+      			filesize 			= extract['filesize'][0];
+      			filesignature			= extract['filesignature'][0];
+      			flags 				= extract['flags'][0];
 		});
 
  		if(get_credential(mac + key + getStoredSnonce()) == credential_client_to_server){
